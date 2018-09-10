@@ -1,0 +1,283 @@
+---
+title: "HRV"
+output:
+  word_document: default
+  pdf_document: default
+classoption: landscape
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(readxl)
+library(here)
+library(glue)
+library(ggrepel)
+library(ggplot2)
+library(gridExtra)
+library(ggplus)
+library(magrittr)
+library(reshape2)
+library(zoo)
+
+###Load Files
+HRV <- read.csv()
+
+
+###Wide to Long
+HRV2 %<>%
+  melt("Athlete name")
+
+colnames(HRV2)[1] <- "Name"
+
+###Remove Missing Data
+HRV2 <- na.omit(HRV2)
+HRV2$value <- as.numeric(HRV2$value)
+
+###Log Transform Data
+HRV2$lnRMSSD <- log10(HRV2$value)
+
+###Create Rolling Average, Standard Deviation, Upper/Lower Thresholds 
+HRV2 %<>%
+  group_by(Name) %>%
+  mutate("HRVSD" = sd(lnRMSSD, na.rm = T),
+         "HRVMean" = mean(lnRMSSD),
+         "HRVMeanRA" = rollmean(lnRMSSD, 7, na.pad = T, align = "right"),
+         upper_limit = round(HRVMean + 1.5 * HRVSD, 3),
+         lower_limit = round(HRVMean - 1.5 * HRVSD, 3)) %>%
+  subset(select=-c(HRVSD, HRVMean)) %>%
+  ungroup %>%
+  gather(rms , rms2, -Name, -variable, -value)
+
+colnames(HRV2)[2] <- "Date"
+colnames(HRV2)[3] <- "RMSSD"
+colnames(HRV2)[4] <- "DataType"
+SeasonInfo$Date <- as.Date(SeasonInfo$Date, "%d/%m/%Y")
+HRV2$Date <- as.Date(HRV2$Date,  "%d/%m/%Y")
+
+
+###Position Datasets
+Data_Props <- HRV5 %>%
+  filter(Position == "Prop")
+
+Data_Hooker <- HRV5 %>%
+  filter(Position == "Hooker")
+
+Data_Second <- HRV5 %>%
+  filter(Position == "Second Row")
+
+Data_BackRow <- HRV5 %>%
+  filter(Position == "Back Row")
+
+Data_Scrum <- HRV5 %>%
+  filter(Position == "Scrum Half")
+
+Data_Fly <- HRV5 %>%
+  filter(Position == "Fly Half")
+
+Data_Centre <- HRV5 %>%
+  filter(Position == "Centre")
+
+Data_WingFull <- HRV5 %>%
+  filter(Position == "Wing/FullBack")
+
+A <-Data_Hooker %>%
+  ggplot(aes(x = Date, y = rms2, group =DataType))+
+  geom_line(aes(linetype=DataType, color=DataType), size = 2.5, linetype = "solid") +
+  ylim(1, 3) +
+  labs(title = 'LnRMSSD Over Time', x = 'Testing Date', y = 'LnRMSSD') +
+  ggtitle("Hooker")+
+    guides(color = guide_legend(override.aes = list(size=5)))+
+    theme(legend.text=element_text(size=30))+
+    theme(strip.text = element_text(size = 75))+
+    theme(legend.title=element_blank())+
+  theme(legend.key.size = unit(3, 'lines'))+
+     theme(axis.text.x = element_text(colour="grey20",size=25,angle=90,hjust=.5,vjust=.5,face="plain"),
+        axis.text.y = element_text(colour="grey20",size=25,angle=0,hjust=1,vjust=0,face="plain"),  
+        axis.title.x = element_text(colour="grey20",size=25,angle=0,hjust=.5,vjust=0,face="plain"),
+        axis.title.y = element_text(colour="grey20",size=25,angle=90,hjust=.5,vjust=.5,face="plain"),
+                plot.title = element_text(size =60))
+
+
+
+B <-Data_Props %>%
+  ggplot(aes(x = Date, y = rms2, group =DataType))+
+  geom_line(aes(linetype=DataType, color=DataType), size = 2.5, linetype = "solid") +
+  ylim(1, 3) +
+  labs(title = 'LnRMSSD Over Time', x = 'Testing Date', y = 'LnRMSSD') +
+  ggtitle("Props")+
+      guides(color = guide_legend(override.aes = list(size=5)))+
+    theme(legend.text=element_text(size=30))+
+    theme(strip.text = element_text(size = 75))+
+    theme(legend.title=element_blank())+
+  theme(legend.key.size = unit(3, 'lines'))+
+     theme(axis.text.x = element_text(colour="grey20",size=25,angle=90,hjust=.5,vjust=.5,face="plain"),
+        axis.text.y = element_text(colour="grey20",size=25,angle=0,hjust=1,vjust=0,face="plain"),  
+        axis.title.x = element_text(colour="grey20",size=25,angle=0,hjust=.5,vjust=0,face="plain"),
+        axis.title.y = element_text(colour="grey20",size=25,angle=90,hjust=.5,vjust=.5,face="plain"),
+                plot.title = element_text(size =60))
+
+
+C <-Data_Second %>%
+  ggplot(aes(x = Date, y = rms2, group =DataType))+
+  geom_line(aes(linetype=DataType, color=DataType), size = 2.5, linetype = "solid") +
+  ylim(1, 3) +
+  labs(title = 'LnRMSSD Over Time', x = 'Testing Date', y = 'LnRMSSD') +
+  ggtitle("Second Row")+
+      guides(color = guide_legend(override.aes = list(size=5)))+
+    theme(legend.text=element_text(size=30))+
+    theme(strip.text = element_text(size = 75))+
+    theme(legend.title=element_blank())+
+  theme(legend.key.size = unit(3, 'lines'))+
+     theme(axis.text.x = element_text(colour="grey20",size=25,angle=90,hjust=.5,vjust=.5,face="plain"),
+        axis.text.y = element_text(colour="grey20",size=25,angle=0,hjust=1,vjust=0,face="plain"),  
+        axis.title.x = element_text(colour="grey20",size=25,angle=0,hjust=.5,vjust=0,face="plain"),
+        axis.title.y = element_text(colour="grey20",size=25,angle=90,hjust=.5,vjust=.5,face="plain"),
+                plot.title = element_text(size =60))
+
+
+C <-Data_BackRow %>%
+  ggplot(aes(x = Date, y = rms2, group =DataType))+
+  geom_line(aes(linetype=DataType, color=DataType), size = 2.5, linetype = "solid") +
+  ylim(1, 3) +
+  labs(title = 'LnRMSSD Over Time', x = 'Testing Date', y = 'LnRMSSD') +
+  ggtitle("Back Row")+
+      guides(color = guide_legend(override.aes = list(size=5)))+
+    theme(legend.text=element_text(size=30))+
+    theme(strip.text = element_text(size = 75))+
+    theme(legend.title=element_blank())+
+  theme(legend.key.size = unit(3, 'lines'))+
+     theme(axis.text.x = element_text(colour="grey20",size=25,angle=90,hjust=.5,vjust=.5,face="plain"),
+        axis.text.y = element_text(colour="grey20",size=25,angle=0,hjust=1,vjust=0,face="plain"),  
+        axis.title.x = element_text(colour="grey20",size=25,angle=0,hjust=.5,vjust=0,face="plain"),
+        axis.title.y = element_text(colour="grey20",size=25,angle=90,hjust=.5,vjust=.5,face="plain"),
+                plot.title = element_text(size =60))
+
+
+D <-Data_Scrum %>%
+  ggplot(aes(x = Date, y = rms2, group =DataType))+
+  geom_line(aes(linetype=DataType, color=DataType), size = 2.5, linetype = "solid") +
+  ylim(1, 3) +
+  labs(title = 'LnRMSSD Over Time', x = 'Testing Date', y = 'LnRMSSD') +
+  ggtitle("Scrum Half")+
+      guides(color = guide_legend(override.aes = list(size=5)))+
+    theme(legend.text=element_text(size=30))+
+    theme(strip.text = element_text(size = 75))+
+    theme(legend.title=element_blank())+
+  theme(legend.key.size = unit(3, 'lines'))+
+     theme(axis.text.x = element_text(colour="grey20",size=25,angle=90,hjust=.5,vjust=.5,face="plain"),
+        axis.text.y = element_text(colour="grey20",size=25,angle=0,hjust=1,vjust=0,face="plain"),  
+        axis.title.x = element_text(colour="grey20",size=25,angle=0,hjust=.5,vjust=0,face="plain"),
+        axis.title.y = element_text(colour="grey20",size=25,angle=90,hjust=.5,vjust=.5,face="plain"),
+                plot.title = element_text(size =60))
+
+
+E <-Data_Fly %>%
+  ggplot(aes(x = Date, y = rms2, group =DataType))+
+  geom_line(aes(linetype=DataType, color=DataType), size = 2.5, linetype = "solid") +
+  ylim(1, 3) +
+  labs(title = 'LnRMSSD Over Time', x = 'Testing Date', y = 'LnRMSSD') +
+  ggtitle("Fly Half")+
+      guides(color = guide_legend(override.aes = list(size=5)))+
+    theme(legend.text=element_text(size=30))+
+    theme(strip.text = element_text(size = 75))+
+    theme(legend.title=element_blank())+
+  theme(legend.key.size = unit(3, 'lines'))+
+     theme(axis.text.x = element_text(colour="grey20",size=25,angle=90,hjust=.5,vjust=.5,face="plain"),
+        axis.text.y = element_text(colour="grey20",size=25,angle=0,hjust=1,vjust=0,face="plain"),  
+        axis.title.x = element_text(colour="grey20",size=25,angle=0,hjust=.5,vjust=0,face="plain"),
+        axis.title.y = element_text(colour="grey20",size=25,angle=90,hjust=.5,vjust=.5,face="plain"),
+                plot.title = element_text(size =60))
+
+
+G <-Data_Centre %>%
+  ggplot(aes(x = Date, y = rms2, group =DataType))+
+  geom_line(aes(linetype=DataType, color=DataType), size = 2.5, linetype = "solid") +
+  ylim(1, 3) +
+  labs(title = 'LnRMSSD Over Time', x = 'Testing Date', y = 'LnRMSSD') +
+  ggtitle("Centre")+
+      guides(color = guide_legend(override.aes = list(size=5)))+
+    theme(legend.text=element_text(size=30))+
+    theme(strip.text = element_text(size = 75))+
+    theme(legend.title=element_blank())+
+  theme(legend.key.size = unit(3, 'lines'))+
+     theme(axis.text.x = element_text(colour="grey20",size=25,angle=90,hjust=.5,vjust=.5,face="plain"),
+        axis.text.y = element_text(colour="grey20",size=25,angle=0,hjust=1,vjust=0,face="plain"),  
+        axis.title.x = element_text(colour="grey20",size=25,angle=0,hjust=.5,vjust=0,face="plain"),
+        axis.title.y = element_text(colour="grey20",size=25,angle=90,hjust=.5,vjust=.5,face="plain"),
+                plot.title = element_text(size =60))
+
+
+H <-Data_WingFull %>%
+  ggplot(aes(x = Date, y = rms2, group =DataType))+
+  geom_line(aes(linetype=DataType, color=DataType), size = 2.5, linetype = "solid") +
+  ylim(1, 3) +
+  labs(title = 'LnRMSSD Over Time', x = 'Testing Date', y = 'LnRMSSD') +
+  ggtitle("Wing/Full Back")+
+      guides(color = guide_legend(override.aes = list(size=5)))+
+    theme(legend.text=element_text(size=30))+
+    theme(strip.text = element_text(size = 75))+
+    theme(legend.title=element_blank())+
+  theme(legend.key.size = unit(3, 'lines'))+
+     theme(axis.text.x = element_text(colour="grey20",size=25,angle=90,hjust=.5,vjust=.5,face="plain"),
+        axis.text.y = element_text(colour="grey20",size=25,angle=0,hjust=1,vjust=0,face="plain"),  
+        axis.title.x = element_text(colour="grey20",size=25,angle=0,hjust=.5,vjust=0,face="plain"),
+        axis.title.y = element_text(colour="grey20",size=25,angle=90,hjust=.5,vjust=.5,face="plain"),
+                plot.title = element_text(size =60))
+
+
+
+
+```
+
+
+```{r warning=FALSE, echo=FALSE, message=FALSE,  fig.height = 25, fig.width = 40, fig.align = "center"}
+###Prop Plots
+facet_multiple(plot = A, facets = "Player.Name", ncol = 2, nrow = 2)
+
+```
+
+
+
+```{r warning=FALSE, echo=FALSE, message=FALSE,  fig.height = 25, fig.width = 40, fig.align = "center"}
+###Prop Plots
+facet_multiple(plot = B, facets = "Player.Name", ncol = 2, nrow = 2)
+
+```
+
+
+```{r warning=FALSE, echo=FALSE, message=FALSE,  fig.height = 25, fig.width = 40, fig.align = "center"}
+###Prop Plots
+facet_multiple(plot = C, facets = "Player.Name", ncol = 2, nrow = 2)
+
+```
+
+
+```{r warning=FALSE, echo=FALSE, message=FALSE,  fig.height = 25, fig.width = 40, fig.align = "center"}
+###Prop Plots
+facet_multiple(plot = D, facets = "Player.Name", ncol = 2, nrow = 2)
+
+```
+
+
+```{r warning=FALSE, echo=FALSE, message=FALSE,  fig.height = 25, fig.width = 40, fig.align = "center"}
+###Prop Plots
+facet_multiple(plot = E, facets = "Player.Name", ncol = 2, nrow = 2)
+
+```
+
+
+```{r warning=FALSE, echo=FALSE, message=FALSE,  fig.height = 25, fig.width = 40, fig.align = "center"}
+###Prop Plots
+facet_multiple(plot = G, facets = "Player.Name", ncol = 2, nrow = 2)
+
+```
+
+
+```{r warning=FALSE, echo=FALSE, message=FALSE,  fig.height = 25, fig.width = 40, fig.align = "center"}
+###Prop Plots
+facet_multiple(plot = H, facets = "Player.Name", ncol = 2, nrow = 2)
+
+```
+
