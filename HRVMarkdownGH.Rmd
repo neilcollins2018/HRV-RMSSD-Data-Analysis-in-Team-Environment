@@ -24,6 +24,7 @@ library(zoo)
 ###Load Files
 HRV <- read.csv()
 
+HRV2 <- HRV
 
 ###Wide to Long
 HRV2 %<>%
